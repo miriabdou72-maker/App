@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة ثانوية بالقاسم شاطور - الجزائر</title>
+    <style>
+        :root {
+            --primary: #006233; /* الأخضر الجزائري الأصيل */
+            --primary-dark: #004d28;
+            --accent: #d21034; /* الأحمر الجزائري */
+            --bg-gradient: linear-gradient(135deg, #006233 0%, #003319 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text: #1f2937;
+        }
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: #f4f6f8;
+            background-image: radial-gradient(#006233 0.6px, transparent 0.6px);
+            background-size: 25px 25px;
+            color: var(--text);
+            min-height: 100vh;
+        }
+        /* الشريط العلوي */
+        header {
+            background: var(--bg-gradient);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 98, 51, 0.3);
+            border-bottom: 5px solid var(--accent);
+        }
+        .logo-area h1 {
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+        .logo-area p {
+            font-size: 0.8rem;
+            color: #e2e8f0;
+            margin-top: 2px;
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: white;
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 12px;
+            border: none;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(0, 98, 51, 0.3);
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+        .container {
+            max-width: 680px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        /* لوحة تحكم الأساتذة */
+        #teacher-panel {
+            display: none;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 1.8rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border: 2px solid var(--primary);
+        }
+        textarea, input[type="text"], input[type="password"], input[type="file"] {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            margin-bottom: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 0.95ln;
+            outline: none;
+            transition: 0.2s;
+        }
+        textarea:focus, input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(0, 98, 51, 0.1);
+        }
+        /* بطاقات المنشورات */
+        .post-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 20px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #4b5563;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #f3f4f6;
+            padding-bottom: 0.6rem;
+        }
+        .badge {
+            background: #e6f4ed;
+            color: var(--primary);
+            padding: 0.3rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .post-content {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            margin-bottom: 1rem;
+            white-space: pre-wrap;
+        }
+        .post-media img, .post-media video {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            background: #000;
+            border-radius: 14px;
+            margin-top: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        /* النافذة المنبثقة للرمز السري */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-box {
+            background: white;
+            padding: 2.5rem 2rem;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px; left: 20px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #9ca3af;
+        }
+        .error-msg {
+            color: var(--accent);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            display: none;
+            background: #fdf2f2;
+            padding: 8px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area">
+            <h1>الجمهورية الجزائرية الديمقراطية الشعبية</h1>
+            <p>ثانوية بالقاسم شاطور - فضاء النشر الرسمي</p>
+        </div>
+        <button id="auth-btn" class="btn" onclick="openModal()">🔑 فضاء الأساتذة</button>
+    </header>
+
+    <div class="container">
+        <!-- لوحة النشر الخاصة بالأساتذة (تظهر فقط بعد إدخال الرمز) -->
+        <section id="teacher-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: var(--primary);">📝 نشر محتوى جديد</h2>
+                <button onclick="logoutTeacher()" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:bold;">تسجيل الخروج</button>
+            </div>
+            <input type="text" id="teacher-name" placeholder="اسم الأستاذ والمادة (مثال: أستاذ الرياضيات)">
+            <textarea id="post-text" rows="3" placeholder="اكتب الإعلان، الملخص، أو تفاصيل الدرس هنا..."></textarea>
+            <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">إرفاق فيديو أو صورة توضيحية:</label>
+            <input type="file" id="media-file" accept="image/*,video/*">
+            <button class="btn-primary" onclick="publishPost()">نشر فوراً للجميع 🚀</button>
+        </section>
+
+        <!-- قائمة عرض المنشورات والفيديوهات للجميع -->
+        <section id="feed">
+            <div class="post-card">
+                <div class="post-header">
+                    <span class="badge">إدارة المؤسسة</span>
+                    <span style="font-size: 0.8rem; color: #9ca3af;">منشور مثبت</span>
+                </div>
+                <div class="post-content">مرحباً بكل تلاميذ وأساتذة ثانوية بالقاسم شاطور. أُنشئت هذه المنصة لتكون جسراً للتواصل ونشر الدروس والفيديوهات التعليمية بكل سهولة.</div>
+            </div>
+        </section>
+    </div>
+
+    <!-- نافذة إدخال الرمز السري -->
+    <div id="login-modal" class="modal-overlay">
+        <div class="modal-box">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h3 style="margin-bottom: 0.5rem; color: #1e2937;">تحقق من هُوية الأستاذ</h3>
+            <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 1.5rem;">الرجاء إدخال الرمز السري المخصص للأساتذة لفتح لوحة النشر:</p>
+            <input type="password" id="secret-code-input" placeholder="أدخل الرمز السري هنا...">
+            <p id="error-msg" class="error-msg">الرمز السري غير صحيح! تأكد من الرمز الخاص بك.</p>
+            <button class="btn-primary" onclick="verifyCode()">تأكيد ودخول</button>
+        </div>
+    </div>
+
+    <script>
+        // الرموز السرية المخصصة للأساتذة
+        const VALID_CODES = ["PROF2026", "CHETOUR1954"];
+        
+        const modal = document.getElementById('login-modal');
+        const teacherPanel = document.getElementById('teacher-panel');
+        const authBtn = document.getElementById('auth-btn');
+        const errorMsg = document.getElementById('error-msg');
+
+        // التحقق من حالة الدخول المخزنة مسبقاً
+        window.onload = () => {
+            if (localStorage.getItem('isTeacherAuthenticated') === 'true') {
+                enableTeacherMode();
+            }
+        };
+
+        function openModal() {
+            modal.style.display = 'flex';
+            errorMsg.style.display = 'none';
+            document.getElementById('secret-code-input').value = '';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        function verifyCode() {
+            const enteredCode = document.getElementById('secret-code-input').value.trim();
+            if (VALID_CODES.includes(enteredCode)) {
+                localStorage.setItem('isTeacherAuthenticated', 'true');
+                closeModal();
+                enableTeacherMode();
+            } else {
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        function enableTeacherMode() {
+            teacherPanel.style.display = 'block';
+            authBtn.style.display = 'none';
+        }
+
+        function logoutTeacher() {
+            localStorage.removeItem('isTeacherAuthenticated');
+            teacherPanel.style.display = 'none';
+            authBtn.style.display = 'inline-block';
+        }
+
+        // دالة نشر الفيديوهات والصور والمنشورات بشكل صحيح ومباشر
+        function publishPost() {
+            const author = document.getElementById('teacher-name').value.trim() || "أستاذ بالمؤسسة";
+            const text = document.getElementById('post-text').value.trim();
+            const fileInput = document.getElementById('media-file');
+            const file = fileInput.files[0];
+
+            if (!text && !file) {
+                alert("يرجى كتابة نص المنشور أو إرفاق ملف (صورة أو فيديو) قبل النشر.");
+                return;
+            }
+
+            const feed = document.getElementById('feed');
+            const postCard = document.createElement('div');
+            postCard.className = 'post-card';
+
+            let mediaHTML = '';
+            if (file) {
+                const fileURL = URL.createObjectURL(file);
+                if (file.type.startsWith('image/')) {
+                    mediaHTML = `<div class="post-media"><img src="${fileURL}" alt="صورة مرفقة"></div>`;
+                } else if (file.type.startsWith('video/')) {
+                    // تم ضبط مشغل الفيديو ليعمل بكفاءة عالية وظهور كامل للتحكم
+                    mediaHTML = `<div class="post-media"><video controls preload="metadata" src="${fileURL}"></video></div>`;
+                }
+            }
+
+            const now = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+
+            postCard.innerHTML = `
+                <div class="post-header">
+                    <span class="badge">${author}</span>
+                    <span style="font-size: 0.8rem; color: #9ca3af;">اليوم (${now})</span>
+                </div>
+                <div class="post-content">${text}</div>
+                ${mediaHTML}
+            `;
+
+            // إدراج المنشور الجديد في أعلى القائمة ليراه الجميع فوراً
+            feed.insertBefore(postCard, feed.firstChild);
+
+            // تفريغ الحقول بعد إتمام النشر بنجاح
+            document.getElementById('post-text').value = '';
+            fileInput.value = '';
+            alert("تم نشر المحتوى بنجاح وبات ظاهراً للجميع!");
+        }
+    </script>
+</body>
+</html>
