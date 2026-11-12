@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#006233">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>منصة ثانوية بالقاسم شاطور - الجزائر</title>
+    
+    <!-- إعدادات تحويل الموقع إلى تطبيق هاتف قابل للتثبيت (PWA) -->
+    <link rel="manifest" id="pwa-manifest">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/school.png">
+
+    <!-- مكتبة Supabase للاتصال السحابي ورفع الفيديوهات -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         :root {
             --primary: #006233; /* الأخضر الجزائري الأصيل */
@@ -46,6 +57,11 @@
             color: #e2e8f0;
             margin-top: 2px;
         }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
         .btn {
             background: rgba(255, 255, 255, 0.2);
             color: white;
@@ -62,6 +78,11 @@
             color: var(--primary);
             transform: translateY(-2px);
         }
+        .btn-install {
+            background: var(--accent);
+            border-color: var(--accent);
+            display: none; /* يظهر تلقائياً عند توفر التثبيت على الهاتف */
+        }
         .btn-primary {
             background: var(--primary);
             color: white;
@@ -76,6 +97,10 @@
         }
         .btn-primary:hover {
             background: var(--primary-dark);
+        }
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
         }
         .container {
             max-width: 680px;
@@ -99,7 +124,7 @@
             margin-bottom: 1rem;
             border: 2px solid #e5e7eb;
             border-radius: 12px;
-            font-size: 0.95ln;
+            font-size: 0.95rem;
             outline: none;
             transition: 0.2s;
         }
@@ -195,7 +220,10 @@
             <h1>الجمهورية الجزائرية الديمقراطية الشعبية</h1>
             <p>ثانوية بالقاسم شاطور - فضاء النشر الرسمي</p>
         </div>
-        <button id="auth-btn" class="btn" onclick="openModal()">🔑 فضاء الأساتذة</button>
+        <div class="header-actions">
+            <button id="install-btn" class="btn btn-install">📲 تثبيت التطبيق</button>
+            <button id="auth-btn" class="btn" onclick="openModal()">🔑 فضاء الأساتذة</button>
+        </div>
     </header>
 
     <div class="container">
@@ -209,7 +237,7 @@
             <textarea id="post-text" rows="3" placeholder="اكتب الإعلان، الملخص، أو تفاصيل الدرس هنا..."></textarea>
             <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">إرفاق فيديو أو صورة توضيحية:</label>
             <input type="file" id="media-file" accept="image/*,video/*">
-            <button class="btn-primary" onclick="publishPost()">نشر فوراً للجميع 🚀</button>
+            <button id="publish-btn" class="btn-primary" onclick="publishPost()">نشر فوراً للجميع 🚀</button>
         </section>
 
         <!-- قائمة عرض المنشورات والفيديوهات للجميع -->
@@ -237,6 +265,54 @@
     </div>
 
     <script>
+        // ==========================================
+        // 1. إعدادات تطبيق الهاتف القابل للتثبيت (PWA)
+        // ==========================================
+        const manifestData = {
+            "name": "منصة ثانوية بالقاسم شاطور",
+            "short_name": "شاطور للتعليم",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#006233",
+            "theme_color": "#006233",
+            "icons": [{
+                "src": "https://img.icons8.com/color/512/school.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+        document.getElementById('pwa-manifest').setAttribute('href', URL.createObjectURL(manifestBlob));
+
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-btn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'inline-block';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        // ==========================================
+        // 2. إعدادات السحابة لرفع وعرض الفيديوهات للجميع
+        // ==========================================
+        // ضع رابط ومفتاح مشروعك في Supabase هنا ليعمل الرفع السحابي لجميع التلاميذ:
+        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+        const SUPABASE_KEY = 'YOUR_ANON_PUBLIC_KEY';
+        const supabaseClient = (SUPABASE_URL.includes('YOUR_PROJECT_ID')) 
+            ? null 
+            : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         // الرموز السرية المخصصة للأساتذة
         const VALID_CODES = ["PROF2026", "CHETOUR1954"];
         
@@ -245,11 +321,11 @@
         const authBtn = document.getElementById('auth-btn');
         const errorMsg = document.getElementById('error-msg');
 
-        // التحقق من حالة الدخول المخزنة مسبقاً
         window.onload = () => {
             if (localStorage.getItem('isTeacherAuthenticated') === 'true') {
                 enableTeacherMode();
             }
+            loadPosts(); // جلب المنشورات والفيديوهات المحفوظة للجميع
         };
 
         function openModal() {
@@ -284,51 +360,123 @@
             authBtn.style.display = 'inline-block';
         }
 
-        // دالة نشر الفيديوهات والصور والمنشورات بشكل صحيح ومباشر
-        function publishPost() {
+        // جلب وعرض جميع المنشورات والفيديوهات من قاعدة البيانات
+        async function loadPosts() {
+            if (!supabaseClient) return;
+            
+            const { data, error } = await supabaseClient
+                .from('posts')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (!error && data) {
+                const feed = document.getElementById('feed');
+                // الإبقاء على المنشور المثبت فقط في الأسفل وإضافة المنشورات الجديدة فوقه
+                const pinnedPost = feed.lastElementChild;
+                feed.innerHTML = '';
+                data.forEach(post => {
+                    renderPostCard(post.author, post.content, post.media_url, post.media_type, new Date(post.created_at));
+                });
+                if (pinnedPost) feed.appendChild(pinnedPost);
+            }
+        }
+
+        // دالة نشر الفيديوهات والصور ورفعها بشكل حقيقي ليراها الجميع
+        async function publishPost() {
             const author = document.getElementById('teacher-name').value.trim() || "أستاذ بالمؤسسة";
             const text = document.getElementById('post-text').value.trim();
             const fileInput = document.getElementById('media-file');
             const file = fileInput.files[0];
+            const publishBtn = document.getElementById('publish-btn');
 
             if (!text && !file) {
                 alert("يرجى كتابة نص المنشور أو إرفاق ملف (صورة أو فيديو) قبل النشر.");
                 return;
             }
 
+            publishBtn.disabled = true;
+            publishBtn.innerText = "جاري الرفع والنشر... ⏳";
+
+            try {
+                let mediaUrl = null;
+                let mediaType = null;
+
+                if (file) {
+                    mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+                    
+                    if (supabaseClient) {
+                        // رفع الملف فعلياً إلى سحابة Supabase Storage
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+                        
+                        const { error: uploadError } = await supabaseClient.storage
+                            .from('algeria-media')
+                            .upload(fileName, file);
+
+                        if (uploadError) throw uploadError;
+
+                        const { data: publicUrlData } = supabaseClient.storage
+                            .from('algeria-media')
+                            .getPublicUrl(fileName);
+
+                        mediaUrl = publicUrlData.publicUrl;
+                    } else {
+                        // تشغيل مؤقت في حال لم يتم وضع مفاتيح Supabase بعد
+                        mediaUrl = URL.createObjectURL(file);
+                    }
+                }
+
+                // حفظ المنشور في قاعدة البيانات ليظهر لجميع التلاميذ
+                if (supabaseClient) {
+                    const { error: dbError } = await supabaseClient
+                        .from('posts')
+                        .insert([{ author, content: text, media_url: mediaUrl, media_type: mediaType }]);
+
+                    if (dbError) throw dbError;
+                }
+
+                // عرض المنشور مباشرة في الصفحة
+                renderPostCard(author, text, mediaUrl, mediaType, new Date());
+
+                document.getElementById('post-text').value = '';
+                fileInput.value = '';
+                alert("تم نشر المحتوى بنجاح وبات ظاهراً للجميع!");
+
+            } catch (err) {
+                console.error(err);
+                alert("حدث خطأ أثناء رفع الملف: " + (err.message || "تأكد من إعدادات السحابة والإنترنت"));
+            } finally {
+                publishBtn.disabled = false;
+                publishBtn.innerText = "نشر فوراً للجميع 🚀";
+            }
+        }
+
+        function renderPostCard(author, text, mediaUrl, mediaType, dateObj) {
             const feed = document.getElementById('feed');
             const postCard = document.createElement('div');
             postCard.className = 'post-card';
 
             let mediaHTML = '';
-            if (file) {
-                const fileURL = URL.createObjectURL(file);
-                if (file.type.startsWith('image/')) {
-                    mediaHTML = `<div class="post-media"><img src="${fileURL}" alt="صورة مرفقة"></div>`;
-                } else if (file.type.startsWith('video/')) {
-                    // تم ضبط مشغل الفيديو ليعمل بكفاءة عالية وظهور كامل للتحكم
-                    mediaHTML = `<div class="post-media"><video controls preload="metadata" src="${fileURL}"></video></div>`;
+            if (mediaUrl) {
+                if (mediaType === 'image') {
+                    mediaHTML = `<div class="post-media"><img src="${mediaUrl}" alt="صورة مرفقة"></div>`;
+                } else if (mediaType === 'video') {
+                    mediaHTML = `<div class="post-media"><video controls playsinline preload="metadata" src="${mediaUrl}"></video></div>`;
                 }
             }
 
-            const now = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+            const timeStr = dateObj.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
 
             postCard.innerHTML = `
                 <div class="post-header">
                     <span class="badge">${author}</span>
-                    <span style="font-size: 0.8rem; color: #9ca3af;">اليوم (${now})</span>
+                    <span style="font-size: 0.8rem; color: #9ca3af;">${timeStr}</span>
                 </div>
                 <div class="post-content">${text}</div>
                 ${mediaHTML}
             `;
 
-            // إدراج المنشور الجديد في أعلى القائمة ليراه الجميع فوراً
             feed.insertBefore(postCard, feed.firstChild);
-
-            // تفريغ الحقول بعد إتمام النشر بنجاح
-            document.getElementById('post-text').value = '';
-            fileInput.value = '';
-            alert("تم نشر المحتوى بنجاح وبات ظاهراً للجميع!");
         }
     </script>
 </body>
