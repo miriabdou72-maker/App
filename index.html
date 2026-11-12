@@ -70,11 +70,11 @@
             border-bottom: 5px solid var(--accent);
         }
         .logo-area h1 {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 800;
         }
         .logo-area p {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #e2e8f0;
             margin-top: 2px;
         }
@@ -87,11 +87,12 @@
             background: rgba(255, 255, 255, 0.2);
             color: white;
             border: 1px solid rgba(255, 255, 255, 0.4);
-            padding: 0.6rem 1.2rem;
+            padding: 0.5rem 1rem;
             border-radius: 50px;
             font-weight: 600;
             cursor: pointer;
             backdrop-filter: blur(5px);
+            font-size: 0.85rem;
             transition: all 0.3s ease;
         }
         .btn:hover {
@@ -123,6 +124,33 @@
             max-width: 680px;
             margin: 2rem auto;
             padding: 0 1rem;
+        }
+        /* بطاقة الترحيب وشرح الخطوات للتلميذ */
+        .welcome-card {
+            background: var(--bg-gradient);
+            color: white;
+            padding: 2rem;
+            border-radius: 24px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 98, 51, 0.2);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        .welcome-card h2 {
+            font-size: 1.4rem;
+            margin-bottom: 0.8rem;
+            color: #fff;
+        }
+        .welcome-card ol {
+            padding-right: 1.2rem;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: #f0fdf4;
+        }
+        .welcome-card li {
+            margin-bottom: 0.5rem;
         }
         #teacher-panel {
             display: none;
@@ -180,14 +208,15 @@
             margin-bottom: 1rem;
             white-space: pre-wrap;
         }
-        .post-media img, .post-media video {
+        .post-media img, .post-media iframe {
             width: 100%;
-            max-height: 400px;
+            height: 350px;
             object-fit: contain;
             background: #000;
             border-radius: 14px;
             margin-top: 0.5rem;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: none;
         }
         .modal-overlay {
             display: none;
@@ -232,7 +261,7 @@
     <header>
         <div class="logo-area">
             <h1>الجمهورية الجزائرية الديمقراطية الشعبية</h1>
-            <p>ثانوية بالقاسم شاطور - فضاء النشر الرسمي</p>
+            <p>ثانوية بالقاسم شاطور - الفضاء الرسمي</p>
         </div>
         <div class="header-actions">
             <button id="install-btn" class="btn btn-install">📲 تثبيت التطبيق</button>
@@ -241,19 +270,34 @@
     </header>
 
     <div class="container">
-        <!-- لوحة النشر الخاصة بالأساتذة -->
+        <!-- خلفية ترحيبية جميلة تشرح الخطوات للتلميذ -->
+        <section class="welcome-card">
+            <h2>✨ أهلاً بك في منصة ثانوية بالقاسم شاطور</h2>
+            <p>المنصة الرسمية المخصصة لنشر الدروس، الملخصات، والفيديوهات التعليمية لجميع التلاميذ.</p>
+            <ol>
+                <li><strong>تثبيت التطبيق:</strong> اضغط على زر "تثبيت التطبيق" بالأعلى ليكون التطبيق على شاشة هاتفك الرئيسية.</li>
+                <li><strong>متابعة الدروس:</strong> تصفح الأسفل للاطلاع على أحدث إعلانات الأساتذة وفيديوهات الشرح.</li>
+                <li><strong>خاصية الأساتذة:</strong> مخصصة فقط للأساتذة عبر الكود السري لإضافة ونشر الدروس الجديدة فوراً للجميع.</li>
+            </ol>
+        </section>
+
+        <!-- لوحة النشر الخاصة بالأساتذة (تظهر فقط عند إدخال كود PROF2026) -->
         <section id="teacher-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2 style="color: var(--primary);">📝 نشر محتوى جديد</h2>
+                <h2 style="color: var(--primary);">📝 لوحة نشر الدروس والفيديوهات</h2>
                 <button onclick="logoutTeacher()" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:bold;">تسجيل الخروج</button>
             </div>
-            <input type="text" id="teacher-name" placeholder="اسم الأستاذ والمادة (مثال: أستاذ الرياضيات)">
-            <textarea id="post-text" rows="3" placeholder="اكتب الإعلان، الملخص، أو تفاصيل الدرس هنا..."></textarea>
+            <input type="text" id="teacher-name" placeholder="اسم الأستاذ والمادة (مثال: أستاذ الفيزياء)">
+            <textarea id="post-text" rows="3" placeholder="اكتب وصف الدرس أو الإعلان هنا..."></textarea>
             
-            <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">اختر صورة أو فيديو (يدعم الفيديوهات الطويلة حتى ساعة):</label>
-            <input type="file" id="media-file" accept="image/*,video/*">
+            <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">🔗 رابط الفيديو (يوتيوب أو رابط مباشر للفيديوهات الطويلة):</label>
+            <input type="text" id="video-url-input" placeholder="ألصق رابط الفيديو هنا...">
 
-            <button id="publish-btn" class="btn-primary" onclick="publishPost()">نشر فوراً للجميع 🚀</button>
+            <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">أو اختر صورة توضيحية من هاتفك (اختياري):</label>
+            <input type="file" id="media-file" accept="image/*">
+
+            <!-- زر الضغطة الواحدة للإرسال والعرض المباشر -->
+            <button id="publish-btn" class="btn-primary" onclick="publishPost()">🚀 نشر الفيديو والمحتوى فوراً للجميع</button>
         </section>
 
         <!-- قائمة عرض المنشورات -->
@@ -268,14 +312,14 @@
         </section>
     </div>
 
-    <!-- نافذة الرمز السري -->
+    <!-- نافذة الرمز السري للأساتذة (PROF2026) -->
     <div id="login-modal" class="modal-overlay">
         <div class="modal-box">
             <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h3 style="margin-bottom: 0.5rem; color: #1e2937;">تحقق من هُوية الأستاذ</h3>
-            <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 1.5rem;">الرجاء إدخال الرمز السري المخصص للأساتذة لفتح لوحة النشر:</p>
-            <input type="password" id="secret-code-input" placeholder="أدخل الرمز السري هنا...">
-            <p id="error-msg" class="error-msg">الرمز السري غير صحيح! تأكد من الرمز الخاص بك.</p>
+            <h3 style="margin-bottom: 0.5rem; color: #1e2937;">فضاء الأساتذة فقط</h3>
+            <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 1.5rem;">الرجاء إدخال كود الأستاذ الخاص (PROF2026) لفتح لوحة النشر:</p>
+            <input type="password" id="secret-code-input" placeholder="أدخل الكود هنا...">
+            <p id="error-msg" class="error-msg">الكود غير صحيح! هذه الخاصية مخصصة للأساتذة فقط.</p>
             <button class="btn-primary" onclick="verifyCode()">تأكيد ودخول</button>
         </div>
     </div>
@@ -316,7 +360,7 @@
             }
         });
 
-        const VALID_CODES = ["PROF2026", "CHETOUR1954"];
+        const VALID_CODE = "PROF2026";
         const modal = document.getElementById('login-modal');
         const teacherPanel = document.getElementById('teacher-panel');
         const authBtn = document.getElementById('auth-btn');
@@ -340,7 +384,7 @@
 
         function verifyCode() {
             const enteredCode = document.getElementById('secret-code-input').value.trim();
-            if (VALID_CODES.includes(enteredCode)) {
+            if (enteredCode === VALID_CODE) {
                 localStorage.setItem('isTeacherAuthenticated', 'true');
                 closeModal();
                 enableTeacherMode();
@@ -375,7 +419,7 @@
 
                 querySnapshot.forEach((docSnap) => {
                     const post = docSnap.data();
-                    renderPostCard(docSnap.id, post.author, post.content, post.mediaUrl, post.mediaType, post.timeStr);
+                    renderPostCard(docSnap.id, post.author, post.content, post.mediaUrl, post.mediaType, post.videoUrl, post.timeStr);
                 });
 
                 if (pinnedPost) feed.appendChild(pinnedPost);
@@ -384,82 +428,52 @@
             }
         }
 
-        // خوارزمية ذكية لمعالجة وضغط الفيديوهات الطويلة جداً (حتى ساعة) وتجنب انهيار المتصفح
-        async function compressAndProcessVideo(file) {
-            return new Promise((resolve, reject) => {
-                const videoElement = document.createElement('video');
-                videoElement.preload = 'metadata';
-                videoElement.src = URL.createObjectURL(file);
-                
-                videoElement.onloadedmetadata = () => {
-                    window.URL.revokeObjectURL(videoElement.src);
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 720; // ضبط الدقة لتناسب الهواتف وتوفير الذاكرة
-                    let width = videoElement.videoWidth;
-                    let height = videoElement.videoHeight;
-
-                    if (width > MAX_WIDTH) {
-                        height = Math.round((height * MAX_WIDTH) / width);
-                        width = MAX_WIDTH;
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-
-                    // قراءة سريعة آمنة لملف الفيديو الطويل بدون تحميله كاملاً في الذاكرة العشوائية
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
-                    reader.onerror = (error) => reject(error);
-                    reader.readAsDataURL(file);
-                };
-
-                videoElement.onerror = () => {
-                    // إذا حدث خطأ في تحليل الفيديو، نقوم برفعه بالطريقة المباشرة الآمنة
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
-                    reader.onerror = (error) => reject(error);
-                    reader.readAsDataURL(file);
-                };
-            });
+        function getEmbedYouTubeUrl(url) {
+            if (!url) return '';
+            let videoId = '';
+            if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1].split('?')[0];
+            } else if (url.includes('watch?v=')) {
+                videoId = url.split('watch?v=')[1].split('&')[0];
+            }
+            if (videoId) {
+                return `https://www.youtube.com/embed/${videoId}`;
+            }
+            return url;
         }
 
+        // ضغطة زر واحدة لإرسال الفيديو والمحتوى وعرضه مباشرة للجميع
         async function publishPost() {
             const author = document.getElementById('teacher-name').value.trim() || "أستاذ بالمؤسسة";
             const text = document.getElementById('post-text').value.trim();
+            const videoUrlInput = document.getElementById('video-url-input').value.trim();
             const fileInput = document.getElementById('media-file');
             const file = fileInput.files[0];
             const publishBtn = document.getElementById('publish-btn');
 
-            if (!text && !file) {
-                alert("يرجى كتابة نص أو اختيار صورة/فيديو قبل النشر.");
+            if (!text && !videoUrlInput && !file) {
+                alert("يرجى كتابة نص أو إضافة رابط فيديو أو صورة قبل النشر.");
                 return;
             }
 
             publishBtn.disabled = true;
-            publishBtn.innerText = "جاري معالجة الفيديو الطويل ونشره... ⏳";
+            publishBtn.innerText = "جاري النشر والعرض المباشر... ⏳";
 
             try {
                 let mediaUrl = null;
                 let mediaType = null;
 
                 if (file) {
-                    const isVideo = file.type.startsWith('video/');
-                    mediaType = isVideo ? 'video' : 'image';
-
-                    if (isVideo) {
-                        // معالجة ذكية ومخصصة للفيديوهات الطويلة لكي لا تتوقف الصفحة
-                        publishBtn.innerText = "جاري ضغط الفيديو وتحسينه (قد يستغرق لحظات)... ⏳";
-                        mediaUrl = await compressAndProcessVideo(file);
-                    } else {
-                        mediaUrl = await new Promise((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onload = (e) => resolve(e.target.result);
-                            reader.onerror = (error) => reject(error);
-                            reader.readAsDataURL(file);
-                        });
-                    }
+                    mediaType = 'image';
+                    mediaUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = (error) => reject(error);
+                        reader.readAsDataURL(file);
+                    });
                 }
+
+                let finalVideoUrl = getEmbedYouTubeUrl(videoUrlInput);
 
                 const timeStr = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
                 const postData = {
@@ -467,6 +481,7 @@
                     content: text,
                     mediaUrl,
                     mediaType,
+                    videoUrl: finalVideoUrl,
                     timeStr,
                     createdAt: window.firebaseModules.serverTimestamp()
                 };
@@ -476,17 +491,18 @@
                     await addDoc(collection(window.db, "posts"), postData);
                 }
 
-                alert("تم نشر الفيديو الطويل والمحتوى بنجاح وبات ظاهراً لجميع التلاميذ!");
+                alert("تم نشر الفيديو والمحتوى بنجاح وبات ظاهراً ومتاحاً للعرض الفوري لجميع التلاميذ!");
                 document.getElementById('post-text').value = '';
+                document.getElementById('video-url-input').value = '';
                 fileInput.value = '';
                 loadPosts();
 
             } catch (err) {
                 console.error(err);
-                alert("حدث خطأ أثناء معالجة الفيديو: تأكد من استقرار الإنترنت وتجنب الفيديوهات الضخمة جداً.");
+                alert("حدث خطأ أثناء النشر: تأكد من اتصال الإنترنت.");
             } finally {
                 publishBtn.disabled = false;
-                publishBtn.innerText = "نشر فوراً للجميع 🚀";
+                publishBtn.innerText = "🚀 نشر الفيديو والمحتوى فوراً للجميع";
             }
         }
 
@@ -502,18 +518,17 @@
             }
         }
 
-        function renderPostCard(id, author, text, mediaUrl, mediaType, timeStr) {
+        function renderPostCard(id, author, text, mediaUrl, mediaType, videoUrl, timeStr) {
             const feed = document.getElementById('feed');
             const postCard = document.createElement('div');
             postCard.className = 'post-card';
 
             let mediaHTML = '';
-            if (mediaUrl) {
-                if (mediaType === 'image') {
-                    mediaHTML = `<div class="post-media"><img src="${mediaUrl}" alt="صورة مرفقة"></div>`;
-                } else if (mediaType === 'video') {
-                    mediaHTML = `<div class="post-media"><video controls playsinline preload="metadata" src="${mediaUrl}"></video></div>`;
-                }
+            if (mediaUrl && mediaType === 'image') {
+                mediaHTML += `<div class="post-media"><img src="${mediaUrl}" alt="صورة مرفقة"></div>`;
+            }
+            if (videoUrl) {
+                mediaHTML += `<div class="post-media"><iframe src="${videoUrl}" allowfullscreen></iframe></div>`;
             }
 
             const isAuth = localStorage.getItem('isTeacherAuthenticated') === 'true';
