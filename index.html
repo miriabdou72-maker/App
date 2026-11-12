@@ -8,12 +8,39 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>منصة ثانوية بالقاسم شاطور - الجزائر</title>
     
-    <!-- إعدادات تحويل الموقع إلى تطبيق هاتف قابل للتثبيت (PWA) -->
     <link rel="manifest" id="pwa-manifest">
     <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/school.png">
 
-    <!-- مكتبة Supabase للاتصال السحابي ورفع الفيديوهات -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- مكتبات Firebase للربط السحابي -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDbU4io3s136TdHsCrB0OQYoYbzAjKcLKc",
+            authDomain: "chetour-school.firebaseapp.com",
+            projectId: "chetour-school",
+            storageBucket: "chetour-school.firebasestorage.app",
+            messagingSenderId: "43512603553",
+            appId: "1:43512603553:web:d15b40a9507ea675ada1e0",
+            measurementId: "G-L8P49B1J1G"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // جعل الدوال متاحة عالمياً في الصفحة
+        window.db = db;
+        window.storage = storage;
+        window.firebaseModules = { collection, addDoc, getDocs, query, orderBy, serverTimestamp, ref, uploadBytes, getDownloadURL };
+        
+        // تحميل المنشورات فور فتح الموقع
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof loadPosts === 'function') loadPosts();
+        });
+    </script>
 
     <style>
         :root {
@@ -37,7 +64,6 @@
             color: var(--text);
             min-height: 100vh;
         }
-        /* الشريط العلوي */
         header {
             background: var(--bg-gradient);
             color: white;
@@ -81,7 +107,7 @@
         .btn-install {
             background: var(--accent);
             border-color: var(--accent);
-            display: none; /* يظهر تلقائياً عند توفر التثبيت على الهاتف */
+            display: none;
         }
         .btn-primary {
             background: var(--primary);
@@ -98,16 +124,11 @@
         .btn-primary:hover {
             background: var(--primary-dark);
         }
-        .btn-primary:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
         .container {
             max-width: 680px;
             margin: 2rem auto;
             padding: 0 1rem;
         }
-        /* لوحة تحكم الأساتذة */
         #teacher-panel {
             display: none;
             background: var(--card-bg);
@@ -132,7 +153,6 @@
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(0, 98, 51, 0.1);
         }
-        /* بطاقات المنشورات */
         .post-card {
             background: var(--card-bg);
             padding: 1.5rem;
@@ -174,7 +194,6 @@
             margin-top: 0.5rem;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        /* النافذة المنبثقة للرمز السري */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -227,7 +246,7 @@
     </header>
 
     <div class="container">
-        <!-- لوحة النشر الخاصة بالأساتذة (تظهر فقط بعد إدخال الرمز) -->
+        <!-- لوحة النشر الخاصة بالأساتذة -->
         <section id="teacher-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2 style="color: var(--primary);">📝 نشر محتوى جديد</h2>
@@ -240,7 +259,7 @@
             <button id="publish-btn" class="btn-primary" onclick="publishPost()">نشر فوراً للجميع 🚀</button>
         </section>
 
-        <!-- قائمة عرض المنشورات والفيديوهات للجميع -->
+        <!-- قائمة عرض المنشورات -->
         <section id="feed">
             <div class="post-card">
                 <div class="post-header">
@@ -252,7 +271,7 @@
         </section>
     </div>
 
-    <!-- نافذة إدخال الرمز السري -->
+    <!-- نافذة الرمز السري -->
     <div id="login-modal" class="modal-overlay">
         <div class="modal-box">
             <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -265,9 +284,7 @@
     </div>
 
     <script>
-        // ==========================================
-        // 1. إعدادات تطبيق الهاتف القابل للتثبيت (PWA)
-        // ==========================================
+        // إعدادات PWA لتثبيت التطبيق على الهاتف
         const manifestData = {
             "name": "منصة ثانوية بالقاسم شاطور",
             "short_name": "شاطور للتعليم",
@@ -303,19 +320,7 @@
             }
         });
 
-        // ==========================================
-        // 2. إعدادات السحابة لرفع وعرض الفيديوهات للجميع
-        // ==========================================
-        // ضع رابط ومفتاح مشروعك في Supabase هنا ليعمل الرفع السحابي لجميع التلاميذ:
-        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
-        const SUPABASE_KEY = 'YOUR_ANON_PUBLIC_KEY';
-        const supabaseClient = (SUPABASE_URL.includes('YOUR_PROJECT_ID')) 
-            ? null 
-            : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // الرموز السرية المخصصة للأساتذة
         const VALID_CODES = ["PROF2026", "CHETOUR1954"];
-        
         const modal = document.getElementById('login-modal');
         const teacherPanel = document.getElementById('teacher-panel');
         const authBtn = document.getElementById('auth-btn');
@@ -325,7 +330,6 @@
             if (localStorage.getItem('isTeacherAuthenticated') === 'true') {
                 enableTeacherMode();
             }
-            loadPosts(); // جلب المنشورات والفيديوهات المحفوظة للجميع
         };
 
         function openModal() {
@@ -360,28 +364,30 @@
             authBtn.style.display = 'inline-block';
         }
 
-        // جلب وعرض جميع المنشورات والفيديوهات من قاعدة البيانات
+        // جلب المنشورات من Firebase Firestore وعرضها للجميع
         async function loadPosts() {
-            if (!supabaseClient) return;
-            
-            const { data, error } = await supabaseClient
-                .from('posts')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (!error && data) {
+            if (!window.db) return;
+            try {
+                const { collection, getDocs, query, orderBy } = window.firebaseModules;
+                const q = query(collection(window.db, "posts"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+                
                 const feed = document.getElementById('feed');
-                // الإبقاء على المنشور المثبت فقط في الأسفل وإضافة المنشورات الجديدة فوقه
                 const pinnedPost = feed.lastElementChild;
                 feed.innerHTML = '';
-                data.forEach(post => {
-                    renderPostCard(post.author, post.content, post.media_url, post.media_type, new Date(post.created_at));
+
+                querySnapshot.forEach((doc) => {
+                    const post = doc.data();
+                    renderPostCard(post.author, post.content, post.mediaUrl, post.mediaType, post.timeStr);
                 });
+
                 if (pinnedPost) feed.appendChild(pinnedPost);
+            } catch (err) {
+                console.error("خطأ في جلب المنشورات:", err);
             }
         }
 
-        // دالة نشر الفيديوهات والصور ورفعها بشكل حقيقي ليراها الجميع
+        // نشر المنشورات والفيديوهات ورفعها إلى Firebase Storage و Firestore لترها كل الأجهزة
         async function publishPost() {
             const author = document.getElementById('teacher-name').value.trim() || "أستاذ بالمؤسسة";
             const text = document.getElementById('post-text').value.trim();
@@ -390,7 +396,7 @@
             const publishBtn = document.getElementById('publish-btn');
 
             if (!text && !file) {
-                alert("يرجى كتابة نص المنشور أو إرفاق ملف (صورة أو فيديو) قبل النشر.");
+                alert("يرجى كتابة نص المنشور أو إرفاق ملف قبل النشر.");
                 return;
             }
 
@@ -401,57 +407,46 @@
                 let mediaUrl = null;
                 let mediaType = null;
 
-                if (file) {
+                if (file && window.storage) {
+                    const { ref, uploadBytes, getDownloadURL } = window.firebaseModules;
                     mediaType = file.type.startsWith('video/') ? 'video' : 'image';
-                    
-                    if (supabaseClient) {
-                        // رفع الملف فعلياً إلى سحابة Supabase Storage
-                        const fileExt = file.name.split('.').pop();
-                        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-                        
-                        const { error: uploadError } = await supabaseClient.storage
-                            .from('algeria-media')
-                            .upload(fileName, file);
+                    const fileName = `media_${Date.now()}_${file.name}`;
+                    const storageRef = ref(window.storage, fileName);
 
-                        if (uploadError) throw uploadError;
-
-                        const { data: publicUrlData } = supabaseClient.storage
-                            .from('algeria-media')
-                            .getPublicUrl(fileName);
-
-                        mediaUrl = publicUrlData.publicUrl;
-                    } else {
-                        // تشغيل مؤقت في حال لم يتم وضع مفاتيح Supabase بعد
-                        mediaUrl = URL.createObjectURL(file);
-                    }
+                    const snapshot = await uploadBytes(storageRef, file);
+                    mediaUrl = await getDownloadURL(snapshot.ref);
                 }
 
-                // حفظ المنشور في قاعدة البيانات ليظهر لجميع التلاميذ
-                if (supabaseClient) {
-                    const { error: dbError } = await supabaseClient
-                        .from('posts')
-                        .insert([{ author, content: text, media_url: mediaUrl, media_type: mediaType }]);
+                const timeStr = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+                const postData = {
+                    author,
+                    content: text,
+                    mediaUrl,
+                    mediaType,
+                    timeStr,
+                    createdAt: window.firebaseModules.serverTimestamp()
+                };
 
-                    if (dbError) throw dbError;
+                if (window.db) {
+                    const { collection, addDoc } = window.firebaseModules;
+                    await addDoc(collection(window.db, "posts"), postData);
                 }
 
-                // عرض المنشور مباشرة في الصفحة
-                renderPostCard(author, text, mediaUrl, mediaType, new Date());
-
+                alert("تم نشر المحتوى بنجاح وبات ظاهراً لجميع التلاميذ!");
                 document.getElementById('post-text').value = '';
                 fileInput.value = '';
-                alert("تم نشر المحتوى بنجاح وبات ظاهراً للجميع!");
+                loadPosts();
 
             } catch (err) {
                 console.error(err);
-                alert("حدث خطأ أثناء رفع الملف: " + (err.message || "تأكد من إعدادات السحابة والإنترنت"));
+                alert("حدث خطأ أثناء الرفع: تأكد من اتصال الإنترنت أو صلاحيات التخزين في Firebase.");
             } finally {
                 publishBtn.disabled = false;
                 publishBtn.innerText = "نشر فوراً للجميع 🚀";
             }
         }
 
-        function renderPostCard(author, text, mediaUrl, mediaType, dateObj) {
+        function renderPostCard(author, text, mediaUrl, mediaType, timeStr) {
             const feed = document.getElementById('feed');
             const postCard = document.createElement('div');
             postCard.className = 'post-card';
@@ -465,18 +460,17 @@
                 }
             }
 
-            const timeStr = dateObj.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
-
             postCard.innerHTML = `
                 <div class="post-header">
                     <span class="badge">${author}</span>
-                    <span style="font-size: 0.8rem; color: #9ca3af;">${timeStr}</span>
+                    <span style="font-size: 0.8rem; color: #9ca3af;">${timeStr || ''}</span>
                 </div>
                 <div class="post-content">${text}</div>
                 ${mediaHTML}
             `;
 
-            feed.insertBefore(postCard, feed.firstChild);
+            const pinnedPost = feed.lastElementChild;
+            feed.insertBefore(postCard, pinnedPost);
         }
     </script>
 </body>
