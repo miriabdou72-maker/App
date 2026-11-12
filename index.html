@@ -11,7 +11,7 @@
     <link rel="manifest" id="pwa-manifest">
     <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/school.png">
 
-    <!-- مكتبة Firebase Firestore فقط -->
+    <!-- مكتبة Firebase Firestore لحفظ المنشورات -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
@@ -134,7 +134,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             border: 2px solid var(--primary);
         }
-        textarea, input[type="text"], input[type="password"] {
+        textarea, input[type="text"], input[type="password"], input[type="file"] {
             width: 100%;
             padding: 0.8rem 1rem;
             margin-bottom: 1rem;
@@ -180,12 +180,14 @@
             margin-bottom: 1rem;
             white-space: pre-wrap;
         }
-        .post-media iframe, .post-media img {
+        .post-media img, .post-media video {
             width: 100%;
             max-height: 400px;
+            object-fit: contain;
+            background: #000;
             border-radius: 14px;
             margin-top: 0.5rem;
-            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         .modal-overlay {
             display: none;
@@ -242,12 +244,15 @@
         <!-- لوحة النشر الخاصة بالأساتذة -->
         <section id="teacher-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2 style="color: var(--primary);">📝 نشر إعلان أو درس جديد</h2>
+                <h2 style="color: var(--primary);">📝 نشر محتوى جديد</h2>
                 <button onclick="logoutTeacher()" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:bold;">تسجيل الخروج</button>
             </div>
             <input type="text" id="teacher-name" placeholder="اسم الأستاذ والمادة (مثال: أستاذ الرياضيات)">
             <textarea id="post-text" rows="3" placeholder="اكتب الإعلان، الملخص، أو تفاصيل الدرس هنا..."></textarea>
-            <input type="text" id="media-url" placeholder="رابط فيديو يوتيوب أو صورة (اختياري)">
+            
+            <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">اختر صورة أو فيديو من هاتفك (اختياري):</label>
+            <input type="file" id="media-file" accept="image/*,video/*">
+
             <button id="publish-btn" class="btn-primary" onclick="publishPost()">نشر فوراً للجميع 🚀</button>
         </section>
 
@@ -258,7 +263,7 @@
                     <span class="badge">إدارة المؤسسة</span>
                     <span style="font-size: 0.8rem; color: #9ca3af;">منشور مثبت</span>
                 </div>
-                <div class="post-content">مرحباً بكل تلاميذ وأساتذة ثانوية بالقاسم شاطور. أُنشئت هذه المنصة لتكون جسراً للتواصل ونشر الإعلانات والدروس بكل سهولة.</div>
+                <div class="post-content">مرحباً بكل تلاميذ وأساتذة ثانوية بالقاسم شاطور. أُنشئت هذه المنصة لتكون جسراً للتواصل ونشر الدروس والفيديوهات بكل سهولة.</div>
             </div>
         </section>
     </div>
@@ -368,7 +373,7 @@
 
                 querySnapshot.forEach((doc) => {
                     const post = doc.data();
-                    renderPostCard(post.author, post.content, post.mediaUrl, post.timeStr);
+                    renderPostCard(post.author, post.content, post.mediaUrl, post.mediaType, post.timeStr);
                 });
 
                 if (pinnedPost) feed.appendChild(pinnedPost);
@@ -377,26 +382,42 @@
             }
         }
 
+        // دالة تحويل الصورة أو الفيديو المختار من الهاتف إلى رابط مؤقت مباشر ونشره فوراً
         async function publishPost() {
             const author = document.getElementById('teacher-name').value.trim() || "أستاذ بالمؤسسة";
             const text = document.getElementById('post-text').value.trim();
-            const mediaUrl = document.getElementById('media-url').value.trim();
+            const fileInput = document.getElementById('media-file');
+            const file = fileInput.files[0];
             const publishBtn = document.getElementById('publish-btn');
 
-            if (!text && !mediaUrl) {
-                alert("يرجى كتابة نص المنشور أو إضافّة رابط قبل النشر.");
+            if (!text && !file) {
+                alert("يرجى كتابة نص أو اختيار صورة/فيديو قبل النشر.");
                 return;
             }
 
             publishBtn.disabled = true;
-            publishBtn.innerText = "جاري النشر... ⏳";
+            publishBtn.innerText = "جاري المعالجة والنشر... ⏳";
 
             try {
+                let mediaUrl = null;
+                let mediaType = null;
+
+                if (file) {
+                    mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+                    // تحويل الملف المحلي من الهاتف إلى رابط مباشر داخل التطبيق ليعمل فوراً دون أخطاء تخزين
+                    mediaUrl = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(file);
+                    });
+                }
+
                 const timeStr = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
                 const postData = {
                     author,
                     content: text,
-                    mediaUrl: mediaUrl || null,
+                    mediaUrl,
+                    mediaType,
                     timeStr,
                     createdAt: window.firebaseModules.serverTimestamp()
                 };
@@ -408,30 +429,29 @@
 
                 alert("تم نشر المحتوى بنجاح وبات ظاهراً لجميع التلاميذ!");
                 document.getElementById('post-text').value = '';
-                document.getElementById('media-url').value = '';
+                fileInput.value = '';
                 loadPosts();
 
             } catch (err) {
                 console.error(err);
-                alert("حدث خطأ أثناء النشر: تأكد من تفعيل قاعدة البيانات Firestore في وضع Test Mode.");
+                alert("حدث خطأ أثناء النشر: تأكد من اتصال الإنترنت.");
             } finally {
                 publishBtn.disabled = false;
                 publishBtn.innerText = "نشر فوراً للجميع 🚀";
             }
         }
 
-        function renderPostCard(author, text, mediaUrl, timeStr) {
+        function renderPostCard(author, text, mediaUrl, mediaType, timeStr) {
             const feed = document.getElementById('feed');
             const postCard = document.createElement('div');
             postCard.className = 'post-card';
 
             let mediaHTML = '';
             if (mediaUrl) {
-                if (mediaUrl.includes('youtube.com') || mediaUrl.includes('youtu.be')) {
-                    let videoId = mediaUrl.includes('youtu.be') ? mediaUrl.split('/').pop().split('?')[0] : new URLSearchParams(new URL(mediaUrl).search).get('v');
-                    mediaHTML = `<div class="post-media"><iframe height="315" src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe></div>`;
-                } else {
-                    mediaHTML = `<div class="post-media"><img src="${mediaUrl}" alt="مرفق"></div>`;
+                if (mediaType === 'image') {
+                    mediaHTML = `<div class="post-media"><img src="${mediaUrl}" alt="صورة مرفقة"></div>`;
+                } else if (mediaType === 'video') {
+                    mediaHTML = `<div class="post-media"><video controls playsinline preload="metadata" src="${mediaUrl}"></video></div>`;
                 }
             }
 
