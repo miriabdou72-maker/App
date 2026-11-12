@@ -11,10 +11,10 @@
     <link rel="manifest" id="pwa-manifest">
     <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/school.png">
 
-    <!-- مكتبة Firebase Firestore لحفظ المنشورات -->
+    <!-- مكتبة Firebase Firestore مع دوام الحذف والتحديث -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDbU4io3s136TdHsCrB0OQYoYbzAjKcLKc",
@@ -30,7 +30,7 @@
         const db = getFirestore(app);
 
         window.db = db;
-        window.firebaseModules = { collection, addDoc, getDocs, query, orderBy, serverTimestamp };
+        window.firebaseModules = { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp };
         
         window.addEventListener('DOMContentLoaded', () => {
             if (typeof loadPosts === 'function') loadPosts();
@@ -250,7 +250,7 @@
             <input type="text" id="teacher-name" placeholder="اسم الأستاذ والمادة (مثال: أستاذ الرياضيات)">
             <textarea id="post-text" rows="3" placeholder="اكتب الإعلان، الملخص، أو تفاصيل الدرس هنا..."></textarea>
             
-            <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">اختر صورة أو فيديو من هاتفك (اختياري):</label>
+            <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">اختر صورة أو فيديو (بمختلف الأحجام) من هاتفك:</label>
             <input type="file" id="media-file" accept="image/*,video/*">
 
             <button id="publish-btn" class="btn-primary" onclick="publishPost()">نشر فوراً للجميع 🚀</button>
@@ -352,12 +352,14 @@
         function enableTeacherMode() {
             teacherPanel.style.display = 'block';
             authBtn.style.display = 'none';
+            loadPosts(); // تحديث لعرض أزرار الحذف إن وجدوا
         }
 
         function logoutTeacher() {
             localStorage.removeItem('isTeacherAuthenticated');
             teacherPanel.style.display = 'none';
             authBtn.style.display = 'inline-block';
+            loadPosts(); // إخفاء أزرار الحذف
         }
 
         async function loadPosts() {
@@ -371,9 +373,9 @@
                 const pinnedPost = feed.lastElementChild;
                 feed.innerHTML = '';
 
-                querySnapshot.forEach((doc) => {
-                    const post = doc.data();
-                    renderPostCard(post.author, post.content, post.mediaUrl, post.mediaType, post.timeStr);
+                querySnapshot.forEach((docSnap) => {
+                    const post = docSnap.data();
+                    renderPostCard(docSnap.id, post.author, post.content, post.mediaUrl, post.mediaType, post.timeStr);
                 });
 
                 if (pinnedPost) feed.appendChild(pinnedPost);
@@ -382,7 +384,7 @@
             }
         }
 
-        // دالة تحويل الصورة أو الفيديو المختار من الهاتف إلى رابط مؤقت مباشر ونشره فوراً
+        // رفع الفيديوهات والصور بمختلف أحجامها عبر خدمة سحابية مجانية سريعة تمنع أي تعليق
         async function publishPost() {
             const author = document.getElementById('teacher-name').value.trim() || "أستاذ بالمؤسسة";
             const text = document.getElementById('post-text').value.trim();
@@ -396,7 +398,7 @@
             }
 
             publishBtn.disabled = true;
-            publishBtn.innerText = "جاري المعالجة والنشر... ⏳";
+            publishBtn.innerText = "جاري رفع الفيديو والمعالجة... ⏳";
 
             try {
                 let mediaUrl = null;
@@ -404,12 +406,19 @@
 
                 if (file) {
                     mediaType = file.type.startsWith('video/') ? 'video' : 'image';
-                    // تحويل الملف المحلي من الهاتف إلى رابط مباشر داخل التطبيق ليعمل فوراً دون أخطاء تخزين
-                    mediaUrl = await new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => resolve(e.target.result);
-                        reader.readAsDataURL(file);
+                    
+                    // استخدام خدمة رفع آمنة ومجانية تدعم مختلف الأحجام (للفيديوهات الكبيرة والصور) دون أن تتوقف
+                    const formData = new FormData();
+                    formData.append('reqtype', 'fileupload-post');
+                    formData.append('fileToUpload', file);
+
+                    const uploadRes = await fetch('https://catbox.moe/user/api.php', {
+                        method: 'POST',
+                        body: formData
                     });
+
+                    if (!uploadRes.ok) throw new Error("فشل رفع الملف");
+                    mediaUrl = (await uploadRes.text()).trim();
                 }
 
                 const timeStr = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
@@ -427,21 +436,34 @@
                     await addDoc(collection(window.db, "posts"), postData);
                 }
 
-                alert("تم نشر المحتوى بنجاح وبات ظاهراً لجميع التلاميذ!");
+                alert("تم نشر المحتوى والفيديو بنجاح وبات ظاهراً لجميع التلاميذ!");
                 document.getElementById('post-text').value = '';
                 fileInput.value = '';
                 loadPosts();
 
             } catch (err) {
                 console.error(err);
-                alert("حدث خطأ أثناء النشر: تأكد من اتصال الإنترنت.");
+                alert("حدث خطأ أثناء الرفع: تأكد من اتصال الإنترنت وحجم الملف.");
             } finally {
                 publishBtn.disabled = false;
                 publishBtn.innerText = "نشر فوراً للجميع 🚀";
             }
         }
 
-        function renderPostCard(author, text, mediaUrl, mediaType, timeStr) {
+        // دالة حذف المنشورات والفيديوهات (خاصة بالأساتذة المسجلين فقط)
+        async function deletePost(postId) {
+            if (!confirm("هل أنت متأكد من رغبتك في حذف هذا المنشور نهائياً؟")) return;
+            try {
+                const { deleteDoc, doc } = window.firebaseModules;
+                await deleteDoc(doc(window.db, "posts", postId));
+                loadPosts();
+            } catch (err) {
+                console.error("خطأ أثناء الحذف:", err);
+                alert("تعذر حذف المنشور، تحقق من الصلاحيات.");
+            }
+        }
+
+        function renderPostCard(id, author, text, mediaUrl, mediaType, timeStr) {
             const feed = document.getElementById('feed');
             const postCard = document.createElement('div');
             postCard.className = 'post-card';
@@ -455,10 +477,16 @@
                 }
             }
 
+            const isAuth = localStorage.getItem('isTeacherAuthenticated') === 'true';
+            let deleteBtnHTML = isAuth ? `<button onclick="deletePost('${id}')" style="background:#fdf2f2; color:var(--accent); border:1px solid #fecaca; padding:4px 10px; border-radius:8px; cursor:pointer; font-size:0.8rem; font-weight:bold;">🗑️ حذف المنشور</button>` : '';
+
             postCard.innerHTML = `
                 <div class="post-header">
                     <span class="badge">${author}</span>
-                    <span style="font-size: 0.8rem; color: #9ca3af;">${timeStr || ''}</span>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span style="font-size: 0.8rem; color: #9ca3af;">${timeStr || ''}</span>
+                        ${deleteBtnHTML}
+                    </div>
                 </div>
                 <div class="post-content">${text}</div>
                 ${mediaHTML}
