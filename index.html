@@ -11,7 +11,7 @@
     <link rel="manifest" id="pwa-manifest">
     <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/school.png">
 
-    <!-- مكتبة Firebase Firestore مع دوام الحذف والتحديث -->
+    <!-- مكتبة Firebase Firestore -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
@@ -250,7 +250,7 @@
             <input type="text" id="teacher-name" placeholder="اسم الأستاذ والمادة (مثال: أستاذ الرياضيات)">
             <textarea id="post-text" rows="3" placeholder="اكتب الإعلان، الملخص، أو تفاصيل الدرس هنا..."></textarea>
             
-            <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">اختر صورة أو فيديو (بمختلف الأحجام) من هاتفك:</label>
+            <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">اختر صورة أو فيديو من هاتفك:</label>
             <input type="file" id="media-file" accept="image/*,video/*">
 
             <button id="publish-btn" class="btn-primary" onclick="publishPost()">نشر فوراً للجميع 🚀</button>
@@ -352,14 +352,14 @@
         function enableTeacherMode() {
             teacherPanel.style.display = 'block';
             authBtn.style.display = 'none';
-            loadPosts(); // تحديث لعرض أزرار الحذف إن وجدوا
+            loadPosts();
         }
 
         function logoutTeacher() {
             localStorage.removeItem('isTeacherAuthenticated');
             teacherPanel.style.display = 'none';
             authBtn.style.display = 'inline-block';
-            loadPosts(); // إخفاء أزرار الحذف
+            loadPosts();
         }
 
         async function loadPosts() {
@@ -384,7 +384,7 @@
             }
         }
 
-        // رفع الفيديوهات والصور بمختلف أحجامها عبر خدمة سحابية مجانية سريعة تمنع أي تعليق
+        // نشر الصور والفيديوهات مباشرة عبر قاعدة البيانات بشكل آمن وسريع
         async function publishPost() {
             const author = document.getElementById('teacher-name').value.trim() || "أستاذ بالمؤسسة";
             const text = document.getElementById('post-text').value.trim();
@@ -398,7 +398,7 @@
             }
 
             publishBtn.disabled = true;
-            publishBtn.innerText = "جاري رفع الفيديو والمعالجة... ⏳";
+            publishBtn.innerText = "جاري النشر المعالجة... ⏳";
 
             try {
                 let mediaUrl = null;
@@ -407,18 +407,13 @@
                 if (file) {
                     mediaType = file.type.startsWith('video/') ? 'video' : 'image';
                     
-                    // استخدام خدمة رفع آمنة ومجانية تدعم مختلف الأحجام (للفيديوهات الكبيرة والصور) دون أن تتوقف
-                    const formData = new FormData();
-                    formData.append('reqtype', 'fileupload-post');
-                    formData.append('fileToUpload', file);
-
-                    const uploadRes = await fetch('https://catbox.moe/user/api.php', {
-                        method: 'POST',
-                        body: formData
+                    // قراءة الملف وتحويله المباشر ليعمل بسلاسة وبدون أي أخطاء خارجية
+                    mediaUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = (error) => reject(error);
+                        reader.readAsDataURL(file);
                     });
-
-                    if (!uploadRes.ok) throw new Error("فشل رفع الملف");
-                    mediaUrl = (await uploadRes.text()).trim();
                 }
 
                 const timeStr = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
@@ -443,14 +438,13 @@
 
             } catch (err) {
                 console.error(err);
-                alert("حدث خطأ أثناء الرفع: تأكد من اتصال الإنترنت وحجم الملف.");
+                alert("حدث خطأ أثناء النشر: تأكد من أن حجم الفيديو معقول أو جرب فيديو أقصر.");
             } finally {
                 publishBtn.disabled = false;
                 publishBtn.innerText = "نشر فوراً للجميع 🚀";
             }
         }
 
-        // دالة حذف المنشورات والفيديوهات (خاصة بالأساتذة المسجلين فقط)
         async function deletePost(postId) {
             if (!confirm("هل أنت متأكد من رغبتك في حذف هذا المنشور نهائياً؟")) return;
             try {
