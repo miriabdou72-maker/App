@@ -125,7 +125,6 @@
             margin: 2rem auto;
             padding: 0 1rem;
         }
-        /* بطاقة الترحيب وشرح الخطوات للتلميذ */
         .welcome-card {
             background: var(--bg-gradient);
             color: white;
@@ -218,6 +217,18 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             border: none;
         }
+        .external-video-btn {
+            display: inline-block;
+            margin-top: 10px;
+            background: #e6f4ed;
+            color: var(--primary);
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border: 1px solid var(--primary);
+        }
         .modal-overlay {
             display: none;
             position: fixed;
@@ -270,7 +281,6 @@
     </header>
 
     <div class="container">
-        <!-- خلفية ترحيبية جميلة تشرح الخطوات للتلميذ -->
         <section class="welcome-card">
             <h2>✨ أهلاً بك في منصة ثانوية بالقاسم شاطور</h2>
             <p>المنصة الرسمية المخصصة لنشر الدروس، الملخصات، والفيديوهات التعليمية لجميع التلاميذ.</p>
@@ -281,7 +291,6 @@
             </ol>
         </section>
 
-        <!-- لوحة النشر الخاصة بالأساتذة (تظهر فقط عند إدخال كود PROF2026) -->
         <section id="teacher-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2 style="color: var(--primary);">📝 لوحة نشر الدروس والفيديوهات</h2>
@@ -290,17 +299,15 @@
             <input type="text" id="teacher-name" placeholder="اسم الأستاذ والمادة (مثال: أستاذ الفيزياء)">
             <textarea id="post-text" rows="3" placeholder="اكتب وصف الدرس أو الإعلان هنا..."></textarea>
             
-            <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">🔗 رابط الفيديو (يوتيوب أو رابط مباشر للفيديوهات الطويلة):</label>
-            <input type="text" id="video-url-input" placeholder="ألصق رابط الفيديو هنا...">
+            <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">🔗 رابط الفيديو (يوتيوب، شورتس، أو جوجل درايف):</label>
+            <input type="text" id="video-url-input" placeholder="ألصق أي رابط فيديو هنا وسيتم تهيئته تلقائياً...">
 
             <label style="font-size: 0.85rem; color: #4b5563; display: block; margin-bottom: 5px; font-weight: 600;">أو اختر صورة توضيحية من هاتفك (اختياري):</label>
             <input type="file" id="media-file" accept="image/*">
 
-            <!-- زر الضغطة الواحدة للإرسال والعرض المباشر -->
             <button id="publish-btn" class="btn-primary" onclick="publishPost()">🚀 نشر الفيديو والمحتوى فوراً للجميع</button>
         </section>
 
-        <!-- قائمة عرض المنشورات -->
         <section id="feed">
             <div class="post-card">
                 <div class="post-header">
@@ -312,7 +319,6 @@
         </section>
     </div>
 
-    <!-- نافذة الرمز السري للأساتذة (PROF2026) -->
     <div id="login-modal" class="modal-overlay">
         <div class="modal-box">
             <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -428,21 +434,34 @@
             }
         }
 
-        function getEmbedYouTubeUrl(url) {
+        // دالة ذكية لتحويل أي رابط (YouTube عادي، Shorts، أو Google Drive) تلقائياً إلى رابط عرض مباشر
+        function formatVideoUrl(url) {
             if (!url) return '';
-            let videoId = '';
-            if (url.includes('youtu.be/')) {
-                videoId = url.split('youtu.be/')[1].split('?')[0];
-            } else if (url.includes('watch?v=')) {
-                videoId = url.split('watch?v=')[1].split('&')[0];
-            }
-            if (videoId) {
+            
+            // 1. روابط YouTube Shorts
+            if (url.includes('youtube.com/shorts/')) {
+                const videoId = url.split('youtube.com/shorts/')[1].split('?')[0];
                 return `https://www.youtube.com/embed/${videoId}`;
             }
+            // 2. روابط YouTube المختصرة
+            if (url.includes('youtu.be/')) {
+                const videoId = url.split('youtu.be/')[1].split('?')[0];
+                return `https://www.youtube.com/embed/${videoId}`;
+            }
+            // 3. روابط YouTube العادية
+            if (url.includes('watch?v=')) {
+                const videoId = url.split('watch?v=')[1].split('&')[0];
+                return `https://www.youtube.com/embed/${videoId}`;
+            }
+            // 4. روابط Google Drive
+            if (url.includes('drive.google.com/file/d/')) {
+                const fileId = url.split('drive.google.com/file/d/')[1].split('/')[0];
+                return `https://drive.google.com/file/d/${fileId}/preview`;
+            }
+
             return url;
         }
 
-        // ضغطة زر واحدة لإرسال الفيديو والمحتوى وعرضه مباشرة للجميع
         async function publishPost() {
             const author = document.getElementById('teacher-name').value.trim() || "أستاذ بالمؤسسة";
             const text = document.getElementById('post-text').value.trim();
@@ -473,7 +492,7 @@
                     });
                 }
 
-                let finalVideoUrl = getEmbedYouTubeUrl(videoUrlInput);
+                let finalVideoUrl = formatVideoUrl(videoUrlInput);
 
                 const timeStr = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
                 const postData = {
@@ -491,7 +510,7 @@
                     await addDoc(collection(window.db, "posts"), postData);
                 }
 
-                alert("تم نشر الفيديو والمحتوى بنجاح وبات ظاهراً ومتاحاً للعرض الفوري لجميع التلاميذ!");
+                alert("تم نشر الفيديو والمحتوى بنجاح!");
                 document.getElementById('post-text').value = '';
                 document.getElementById('video-url-input').value = '';
                 fileInput.value = '';
@@ -528,7 +547,12 @@
                 mediaHTML += `<div class="post-media"><img src="${mediaUrl}" alt="صورة مرفقة"></div>`;
             }
             if (videoUrl) {
-                mediaHTML += `<div class="post-media"><iframe src="${videoUrl}" allowfullscreen></iframe></div>`;
+                const formattedUrl = formatVideoUrl(videoUrl);
+                mediaHTML += `
+                    <div class="post-media">
+                        <iframe src="${formattedUrl}" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                        <a href="${formattedUrl}" target="_blank" class="external-video-btn">🎬 فتح الفيديو في نافذة مستقلة (في حال لم يعمل المشغل)</a>
+                    </div>`;
             }
 
             const isAuth = localStorage.getItem('isTeacherAuthenticated') === 'true';
