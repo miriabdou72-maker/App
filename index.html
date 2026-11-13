@@ -355,15 +355,15 @@
 
     <script>
         // ==========================================
-        // إعدادات Supabase لرفع الفيديوهات كبيرة الحجم
-        // ضع بيانات مشروعك من Supabase هنا:
-        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        // بيانات Supabase المدمجة مباشرة في الكود
+        // ==========================================
+        const SUPABASE_URL = 'https://ziwbxppsupgmqcfvofme.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_secret_9xmsyTFx5z973barl9y0ZQ_M_ksW5qI';
         const BUCKET_NAME = 'school-videos';
         // ==========================================
 
         let supabaseClient = null;
-        if (SUPABASE_URL.startsWith('https://') && !SUPABASE_URL.includes('YOUR_PROJECT_ID')) {
+        if (SUPABASE_URL.startsWith('https://')) {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
@@ -451,7 +451,7 @@
         // خوارزمية رفع الفيديو المباشر مهما كان حجمه إلى السحابة
         async function uploadLargeVideo(file) {
             if (!supabaseClient) {
-                throw new Error("يرجى وضع رابط ومفتاح Supabase في الكود لتفعيل الرفع المباشر للفيديوهات الكبيرة.");
+                throw new Error("لم يتم تهيئة عميل Supabase بشكل صحيح.");
             }
 
             const progressContainer = document.getElementById('upload-progress-container');
@@ -462,11 +462,9 @@
             progressBar.style.width = '15%';
             progressText.innerText = `جاري رفع الفيديو (${(file.size / (1024 * 1024)).toFixed(1)} MB)... يرجى الانتظار`;
 
-            // إنشاء اسم فريد للملف لتجنب التداخل
             const fileExt = file.name.split('.').pop();
             const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
 
-            // محاكاة تقدم الشريط أثناء الرفع السحابي
             let fakeProgress = 15;
             const progressInterval = setInterval(() => {
                 if (fakeProgress < 90) {
@@ -491,7 +489,6 @@
                 progressBar.style.width = '100%';
                 progressText.innerText = 'اكتمل الرفع بنجاح! 100%';
 
-                // استخراج الرابط العام المباشر للفيديو
                 const { data: publicUrlData } = supabaseClient.storage
                     .from(BUCKET_NAME)
                     .getPublicUrl(fileName);
@@ -543,12 +540,10 @@
                 let directVideoUrl = null;
                 let externalVideoUrl = formatVideoUrl(videoUrlInput);
 
-                // 1. رفع الفيديو المباشر مهما كان حجمه
                 if (directVideoFile) {
                     directVideoUrl = await uploadLargeVideo(directVideoFile);
                 }
 
-                // 2. معالجة الصورة إن وجدت
                 if (imageFile) {
                     mediaType = 'image';
                     mediaUrl = await new Promise((resolve, reject) => {
@@ -565,7 +560,7 @@
                     content: text,
                     mediaUrl,
                     mediaType,
-                    directVideoUrl, // رابط الفيديو المرفوع مباشرة
+                    directVideoUrl,
                     videoUrl: externalVideoUrl,
                     timeStr,
                     createdAt: window.firebaseModules.serverTimestamp()
@@ -643,7 +638,6 @@
 
             let mediaHTML = '';
             
-            // عرض الفيديو المرفوع مباشرة عبر مشغل HTML5 الأصلي (يدعم التقديم والتأخير والتحميل)
             if (directVideoUrl) {
                 mediaHTML += `
                     <div class="post-media">
